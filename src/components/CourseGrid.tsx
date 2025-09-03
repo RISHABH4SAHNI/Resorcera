@@ -65,7 +65,10 @@ export default function CourseGrid({ sortBy = 'rating' }: CourseGridProps) {
   const infiniteCoursesArray = createInfiniteArray(availableCoursesOnly)
 
   const CourseCard = ({ course }: { course: Course }) => (
-    <div className={`bg-gradient-to-br from-white to-resorcera-cream rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-resorcera-ochre/20 h-[600px] flex flex-col ${course.comingSoon ? 'opacity-70' : 'hover:scale-105'}`}>
+    <Link 
+      href={`/course/${course.id}`}
+      className={`block bg-gradient-to-br from-white to-resorcera-cream rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-resorcera-ochre/20 h-[600px] ${course.comingSoon ? 'opacity-70 cursor-default' : 'hover:scale-105 cursor-pointer'}`}
+    >
       <div className="p-6 flex flex-col h-full">
         {/* Featured Badge */}
         {course.featured && (
@@ -160,18 +163,18 @@ export default function CourseGrid({ sortBy = 'rating' }: CourseGridProps) {
                 )}
               </div>
               <div className="space-y-2">
-                <Link 
-                  href={`/course/${course.id}`}
+                <button
                   className="block w-full bg-gradient-to-r from-resorcera-ochre to-resorcera-mustard text-white text-center py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+                  onClick={(e) => e.preventDefault()} // Let parent Link handle navigation
                 >
                   View Course
-                </Link>
-                <Link 
-                  href={`/course/${course.id}`}
+                </button>
+                <button
                   className="block w-full border border-resorcera-ochre text-resorcera-brown text-center py-2 rounded-lg font-medium hover:bg-resorcera-ochre hover:text-white transition-all duration-300"
+                  onClick={(e) => e.preventDefault()} // Let parent Link handle navigation
                 >
                   Preview Content
-                </Link>
+                </button>
               </div>
             </>
           ) : (
@@ -182,6 +185,7 @@ export default function CourseGrid({ sortBy = 'rating' }: CourseGridProps) {
               <button 
                 disabled
                 className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold cursor-not-allowed"
+                onClick={(e) => e.stopPropagation()} // Prevent navigation for disabled state
               >
                 Stay Tuned
               </button>
@@ -189,7 +193,7 @@ export default function CourseGrid({ sortBy = 'rating' }: CourseGridProps) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 
   return (
