@@ -305,7 +305,7 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('💥 Error updating featured status:', error)
-      alert('Failed to update featured status. Please try again. Error: ' + error.message)
+      alert('Failed to update featured status. Please try again. Error: ' + (error instanceof Error ? error.message : String(error)))
     }
   }
 
