@@ -49,7 +49,22 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
 // PUT /api/courses/[courseId] - Update course
 export async function PUT(request: NextRequest, { params }: { params: Params }) {
   try {
-    const body = await request.json()
+    let body = await request.json()
+
+    // Handle field name conversions from frontend
+    if (body.students !== undefined) {
+      body.enrollmentCount = body.students
+      delete body.students
+    }
+    if (body.rating !== undefined) {
+      body.averageRating = body.rating
+      delete body.rating
+    }
+
+    // Remove fields that shouldn't be updated via this route
+    delete body.id
+    delete body.createdAt
+    delete body.updatedAt
 
     const course = await prisma.course.update({
       where: { id: params.courseId },
@@ -69,6 +84,18 @@ export async function PUT(request: NextRequest, { params }: { params: Params }) 
 // DELETE /api/courses/[courseId] - Delete course
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
   try {
+    // First check if course exists
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: params.courseId }
+    })
+
+    if (!existingCourse) {
+      return NextResponse.json(
+        { success: false, error: 'Course not found' },
+        { status: 404 }
+      )
+    }
+
     await prisma.course.delete({
       where: { id: params.courseId }
     })

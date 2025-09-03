@@ -25,10 +25,13 @@ export async function POST(request: NextRequest, { params }: { params: Params })
       user = await prisma.user.findUnique({ where: { email: userEmail } })
     }
 
-    if (!user && userEmail && userName) {
+    if (!user && userName) {
+      // Generate a unique email if not provided
+      const email = userEmail || `user-${Date.now()}-${Math.random().toString(36).substring(2)}@resorcera.com`
+
       user = await prisma.user.create({
         data: {
-          email: userEmail,
+          email: email,
           name: userName
         }
       })
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Params })
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'User information required' },
+        { success: false, error: 'User name is required' },
         { status: 400 }
       )
     }

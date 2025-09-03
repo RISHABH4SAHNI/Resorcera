@@ -6,10 +6,11 @@ import Navigation from '@/components/Navigation'
 interface Course {
   id: string
   title: string
-  subtitle: string
+  subtitle?: string
   description: string
+  detailedDescription?: string
   price: string
-  originalPrice: string
+  originalPrice?: string
   duration: string
   level: string
   thumbnail: string
@@ -17,10 +18,13 @@ interface Course {
   features: string[]
   topics: string[]
   popularity: number
-  students: number
-  rating: number
+  enrollmentCount: number
+  averageRating: number
+  totalRatings: number
   featured: boolean
   comingSoon?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface NewCourse extends Partial<Course> {
@@ -30,38 +34,7 @@ interface NewCourse extends Partial<Course> {
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [courses, setCourses] = useState<Course[]>([
-    {
-      id: 'sql-workbook',
-      title: 'Complete SQL Workbook',
-      subtitle: 'Master Database Management',
-      description: 'Comprehensive SQL workbook covering everything from basic queries to advanced database operations.',
-      price: '₹999',
-      originalPrice: '₹1999',
-      duration: '40+ Hours',
-      level: 'Beginner to Advanced',
-      thumbnail: '📊',
-      pdfFile: null,
-      features: [
-        'Complete SQL Reference Guide',
-        'Hands-on Practice Exercises', 
-        'Real-world Database Projects',
-        'PDF Workbook & Examples',
-        'Lifetime Access'
-      ],
-      topics: [
-        'Basic SQL Queries',
-        'Joins & Relationships', 
-        'Functions & Procedures',
-        'Database Design',
-        'Performance Optimization'
-      ],
-      popularity: 85,
-      students: 500,
-      rating: 4.8,
-      featured: true
-    }
-  ])
+  const [courses, setCourses] = useState<Course[]>([])
 
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: '',
@@ -254,10 +227,6 @@ export default function AdminPage() {
 
   const handleDeleteCourse = async (courseId: string) => {
     if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      const updatedCourses = courses.filter(course => course.id !== courseId)
-      setCourses(updatedCourses)
-      localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
-
       // Also delete from database
       try {
         const response = await fetch(`/api/courses/${courseId}`, {
@@ -501,8 +470,8 @@ export default function AdminPage() {
                             <span className="text-gray-600">{course.duration}</span>
                             <span className="text-gray-600">{course.level}</span>
                             <span className="text-blue-600">📊 Popularity: {course.popularity}%</span>
-                            <span className="text-green-600">👥 {course.students} students</span>
-                            <span className="text-yellow-600">⭐ {course.rating}/5</span>
+                            <span className="text-green-600">👥 {course.enrollmentCount} students</span>
+                            <span className="text-yellow-600">⭐ {course.averageRating}/5</span>
                           </div>
                           {course.pdfFile && (
                             <p className="text-xs text-green-600 mt-2">📄 PDF: {course.pdfFile}</p>

@@ -64,8 +64,24 @@ export async function POST(request: NextRequest) {
       comingSoon
     } = body
 
+    // Generate a proper course ID from title
+    const courseId = title?.toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .trim() || `course-${Date.now()}`
+
+    // Check if course with this ID already exists
+    const existingCourse = await prisma.course.findUnique({ where: { id: courseId } })
+    if (existingCourse) {
+      return NextResponse.json(
+        { success: false, error: 'A course with this title already exists' },
+        { status: 400 }
+      )
+    }
+
     const course = await prisma.course.create({
       data: {
+        id: courseId,
         title,
         subtitle,
         description,
@@ -80,7 +96,7 @@ export async function POST(request: NextRequest) {
         topics,
         featured: featured || false,
         comingSoon: comingSoon || false,
-        averageRating: 5.0, // Default 5-star rating for new courses
+        averageRating: 0, // Start with 0 rating
         totalRatings: 0,
         popularity: 0,
         enrollmentCount: 0

@@ -110,7 +110,8 @@ export default function CoursePage() {
         body: JSON.stringify({
           rating: userRating.rating,
           review: userRating.review,
-          userName: userName
+          userName: userName,
+          userEmail: `${userName.toLowerCase().replace(/\s+/g, '.')}@resorcera.guest`
         })
       })
 
