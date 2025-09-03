@@ -82,13 +82,42 @@ export default function AdminPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [activeTab, setActiveTab] = useState('courses')
 
-  // Load courses from localStorage on component mount
+  // Load courses from API on component mount
   useEffect(() => {
-    const savedCourses = localStorage.getItem('resorcera-courses')
-    if (savedCourses) {
-      setCourses(JSON.parse(savedCourses))
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('/api/courses')
+        const data = await response.json()
+        if (data.success) {
+          setCourses(data.courses)
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error)
+        // Fallback to localStorage if API fails
+        const savedCourses = localStorage.getItem('resorcera-courses')
+        if (savedCourses) {
+          setCourses(JSON.parse(savedCourses))
+        }
+      }
     }
-  }, [])
+
+    if (isAuthenticated) {
+      fetchCourses()
+    }
+  }, [isAuthenticated])
+
+  // Refresh courses from API
+  const refreshCourses = async () => {
+    try {
+      const response = await fetch('/api/courses')
+      const data = await response.json()
+      if (data.success) {
+        setCourses(data.courses)
+      }
+    } catch (error) {
+      console.error('Error refreshing courses:', error)
+    }
+  }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -127,11 +156,12 @@ export default function AdminPage() {
     const courseId = newCourse.title?.replace(/\s+/g, '-').toLowerCase() || ''
     const isUpcoming = newCourse.courseType === 'upcoming'
 
-    const course: Course = {
-      id: courseId,
+    const courseData = {
+      id: courseId, // Add the id property here
       title: newCourse.title || '',
       subtitle: newCourse.subtitle || (isUpcoming ? 'Coming Soon' : ''),
       description: newCourse.description || '',
+      detailedDescription: newCourse.description || '',
       price: isUpcoming ? 'Coming Soon' : (newCourse.price || ''),
       originalPrice: isUpcoming ? '' : (newCourse.originalPrice || ''),
       duration: isUpcoming ? 'TBD' : (newCourse.duration || ''),
@@ -140,16 +170,58 @@ export default function AdminPage() {
       pdfFile: isUpcoming ? null : pdfFileName,
       features: isUpcoming ? ['Coming Soon'] : (newCourse.features?.filter(f => f.trim()) || []),
       topics: isUpcoming ? ['Coming Soon'] : (newCourse.topics?.filter(t => t.trim()) || []),
-      popularity: 0,
-      students: 0,
-      rating: 0,
       featured: false,
       comingSoon: isUpcoming
     }
 
-    const updatedCourses = [...courses, course]
-    setCourses(updatedCourses)
-    localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
+    try {
+      // Save to database via API
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(courseData)
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        alert('Course added successfully!')
+        await refreshCourses() // Refresh the courses list
+
+        // Also save to localStorage as backup
+        const updatedCourses = [...courses, result.course]
+        localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
+      } else {
+        alert('Failed to add course: ' + (result.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error adding course:', error)
+      alert('Failed to add course. Please try again.')
+    }
+    try {
+      // Save to database via API
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(courseData)
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        alert('Course added successfully!')
+        await refreshCourses() // Refresh the courses list
+      } else {
+        alert('Failed to add course: ' + (result.error || 'Unknown error'))
+        return // Don't reset form if failed
+      }
+    } catch (error) {
+      console.error('Error adding course:', error)
+      alert('Failed to add course. Please try again.')
+      return // Don't reset form if failed
+    }
 
     // Reset form
     setNewCourse({
@@ -166,7 +238,6 @@ export default function AdminPage() {
       courseType: 'active'
     })
     setSelectedFile(null)
-    alert('Course added successfully!')
   }
 
   const handleEditCourse = (course: Course) => {
@@ -178,33 +249,75 @@ export default function AdminPage() {
     e.preventDefault()
     if (!editingCourse) return
 
-    const updatedCourses = courses.map(course => 
-      course.id === editingCourse.id ? editingCourse : course
-    )
-    setCourses(updatedCourses)
-    localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
+    try {
+      const response = await fetch(`/api/courses/${editingCourse.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(editingCourse)
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        await refreshCourses()
+        alert('Course updated successfully!')
+      } else {
+        alert('Failed to update course: ' + (result.error || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('Error updating course:', error)
+      alert('Failed to update course. Please try again.')
+    }
+
     setShowEditModal(false)
     setEditingCourse(null)
-    alert('Course updated successfully!')
   }
 
-  const handleDeleteCourse = (courseId: string) => {
+  const handleDeleteCourse = async (courseId: string) => {
     if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
       const updatedCourses = courses.filter(course => course.id !== courseId)
       setCourses(updatedCourses)
       localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
-      alert('Course deleted successfully!')
+
+      // Also delete from database
+      try {
+        const response = await fetch(`/api/courses/${courseId}`, {
+          method: 'DELETE'
+        })
+
+        const result = await response.json()
+        if (result.success) {
+          await refreshCourses()
+          alert('Course deleted successfully!')
+        } else {
+          alert('Failed to delete course: ' + (result.error || 'Unknown error'))
+        }
+      } catch (error) {
+        console.error('Error deleting course:', error)
+        alert('Failed to delete course from database.')
+      }
     }
   }
 
   const handleToggleFeatured = (courseId: string) => {
-    const updatedCourses = courses.map(course => 
-      course.id === courseId 
-        ? { ...course, featured: !course.featured }
-        : course
-    )
-    setCourses(updatedCourses)
-    localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
+    const course = courses.find(c => c.id === courseId)
+    if (course) {
+      const updatedCourse = { ...course, featured: !course.featured }
+
+      // Update in database
+      fetch(`/api/courses/${courseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedCourse)
+      }).then(() => refreshCourses())
+
+      // Update local state immediately for better UX
+      const updatedCourses = courses.map(c => 
+        c.id === courseId ? updatedCourse : c
+      )
+      setCourses(updatedCourses)
+    }
   }
 
   const updateEditingCourseField = (field: string, value: any) => {
@@ -473,7 +586,15 @@ export default function AdminPage() {
                                   : c
                               )
                               setCourses(updatedCourses)
-                              localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
+                              // Update in database and refresh
+                              const updatedCourse = updatedCourses.find(c => c.id === course.id)
+                              if (updatedCourse) {
+                                fetch(`/api/courses/${course.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(updatedCourse)
+                                }).then(() => refreshCourses())
+                              }
                             }}
                             className="w-20 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
                           />
