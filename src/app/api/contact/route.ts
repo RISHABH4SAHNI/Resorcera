@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
+import { handleApiError } from '@/lib/errorHandler'
+import { validateContactInput, sanitizeString } from '@/lib/validation'
+import { rateLimit } from '@/lib/rateLimit'
+import { ValidationError } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, subject, message } = await request.json()
+    // Apply strict rate limiting for contact form
+    await rateLimit({ requests: 5, window: 60 })(request)
+    const body = await request.json()
+
+    // Validate and sanitize input
+    validateContactInput(body)
+
+    const name = sanitizeString(body.name, 100)
+    const email = sanitizeString(body.email, 320)
+    const subject = sanitizeString(body.subject, 200)
+    const message = sanitizeString(body.message, 2000)
+
+    // Check for required environment variables
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new ValidationError('Email service is not configured', 500)
+    }
 
     // Create transporter - you'll need to configure this with your email settings
     const transporter = nodemailer.createTransport({
@@ -13,6 +32,13 @@ export async function POST(request: NextRequest) {
         pass: process.env.EMAIL_PASS, // Your app password
       },
     })
+
+    // Verify transporter configuration
+    try {
+      await transporter.verify()
+    } catch (error) {
+      throw new ValidationError('Email service is not available', 503)
+    }
 
     // Email to you (admin)
     const adminMailOptions = {
@@ -59,6 +85,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Emails sent successfully' })
   } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to send email' })
+    return handleApiError(error)
   }
 }

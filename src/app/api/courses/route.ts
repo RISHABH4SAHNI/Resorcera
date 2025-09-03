@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handleApiError } from '@/lib/errorHandler'
+import { validateCourseInput, sanitizeString } from '@/lib/validation'
+import { rateLimit } from '@/lib/rateLimit'
 
 // GET /api/courses - Fetch all courses
 export async function GET(request: NextRequest) {
@@ -35,67 +38,49 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, courses })
   } catch (error) {
-    console.error('Error fetching courses:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch courses' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
 // POST /api/courses - Create new course
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    await rateLimit({ requests: 10, window: 15 })(request)
+
     const body = await request.json()
-    const {
-      title,
-      subtitle,
-      description,
-      detailedDescription,
-      price,
-      originalPrice,
-      duration,
-      level,
-      thumbnail,
-      pdfFile,
-      features,
-      topics,
-      featured,
-      comingSoon
-    } = body
+
+    // Validate input
+    validateCourseInput(body)
+
+    // Sanitize string inputs
+    const sanitizedData = {
+      title: sanitizeString(body.title, 200),
+      subtitle: body.subtitle ? sanitizeString(body.subtitle, 200) : undefined,
+      description: sanitizeString(body.description, 5000),
+      detailedDescription: body.detailedDescription ? sanitizeString(body.detailedDescription, 10000) : undefined,
+      price: body.price ? sanitizeString(body.price, 50) : undefined,
+      originalPrice: body.originalPrice ? sanitizeString(body.originalPrice, 50) : undefined,
+      duration: body.duration ? sanitizeString(body.duration, 100) : undefined,
+      level: body.level || 'Beginner',
+      thumbnail: body.thumbnail ? sanitizeString(body.thumbnail, 10) : '📚',
+      pdfFile: body.pdfFile,
+      features: Array.isArray(body.features) ? body.features.map((f: string) => sanitizeString(f, 200)) : [],
+      topics: Array.isArray(body.topics) ? body.topics.map((t: string) => sanitizeString(t, 200)) : [],
+      featured: Boolean(body.featured),
+      comingSoon: Boolean(body.comingSoon)
+    }
 
     // Generate a proper course ID from title
-    const courseId = title?.toLowerCase()
+    const courseId = sanitizedData.title.toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
       .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .trim() || `course-${Date.now()}`
-
-    // Check if course with this ID already exists
-    const existingCourse = await prisma.course.findUnique({ where: { id: courseId } })
-    if (existingCourse) {
-      return NextResponse.json(
-        { success: false, error: 'A course with this title already exists' },
-        { status: 400 }
-      )
-    }
+      .trim()
 
     const course = await prisma.course.create({
       data: {
         id: courseId,
-        title,
-        subtitle,
-        description,
-        detailedDescription,
-        price,
-        originalPrice,
-        duration,
-        level,
-        thumbnail,
-        pdfFile,
-        features,
-        topics,
-        featured: featured || false,
-        comingSoon: comingSoon || false,
+        ...sanitizedData,
         averageRating: 0, // Start with 0 rating
         totalRatings: 0,
         popularity: 0,
@@ -105,10 +90,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, course })
   } catch (error) {
-    console.error('Error creating course:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create course' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

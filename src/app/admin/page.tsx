@@ -32,9 +32,10 @@ interface NewCourse extends Partial<Course> {
 }
 
 export default function AdminPage() {
-  const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [password, setPassword] = useState('')
   const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: '',
@@ -55,13 +56,80 @@ export default function AdminPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [activeTab, setActiveTab] = useState('courses')
 
+  // Check for existing authentication
+  useEffect(() => {
+    const savedAuth = sessionStorage.getItem('admin_authenticated')
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true)
+    }
+    setLoading(false)
+  }, [])
+
+  // Handle password login
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === 'resorcera2025') {
+      sessionStorage.setItem('admin_authenticated', 'true')
+      setIsAuthenticated(true)
+      setPassword('')
+    } else {
+      alert('Incorrect password!')
+    }
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_authenticated')
+    setIsAuthenticated(true)
+  }
+
+  // Handle successful authentication
+  const handleAuthentication = (token: string) => {
+    setAuthToken(token)
+    setIsAuthenticated(true)
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_token')
+    setAuthToken(null)
+    setIsAuthenticated(false)
+  }
+
+  // Check for existing authentication on component mount
+  useEffect(() => {
+    const savedToken = sessionStorage.getItem('admin_token')
+    if (savedToken) {
+      setAuthToken(savedToken)
+      setIsAuthenticated(true)
+    }
+    setLoading(false)
+  }, [])
+
+  // Handle successful authentication
+  const handleAuthentication = (token: string) => {
+    setAuthToken(token)
+    setIsAuthenticated(true)
+  }
+
+  // Handle logout
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_token')
+    setAuthToken(null)
+    setIsAuthenticated(false)
+  }
+
   // Load courses from API on component mount
   useEffect(() => {
     const fetchCourses = async () => {
       console.log('🔄 Fetching courses from API...')
       try {
         console.log('Fetching courses from API...')
-        const response = await fetch('/api/courses')
+        const response = await fetch('/api/courses', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
         console.log('📡 API Response status:', response.status)
         const data = await response.json()
         console.log('📊 API Response data:', data)
@@ -90,7 +158,11 @@ export default function AdminPage() {
   const refreshCourses = async () => {
     try {
       console.log('🔄 Refreshing courses...')
-      const response = await fetch('/api/courses')
+      const response = await fetch('/api/courses', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
       console.log('📡 Refresh Response status:', response.status)
       const data = await response.json()
       console.log('📊 Refresh API Response:', data)
@@ -103,15 +175,6 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error refreshing courses:', error)
-    }
-  }
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (password === 'resorcera2025') {
-      setIsAuthenticated(true)
-    } else {
-      alert('Incorrect password')
     }
   }
 
@@ -129,6 +192,15 @@ export default function AdminPage() {
       try {
         const response = await fetch('/api/upload-pdf', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
           body: formData
         })
         const result = await response.json()
@@ -168,6 +240,18 @@ export default function AdminPage() {
       // Save to database via API
       const response = await fetch('/api/courses', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         headers: {
           'Content-Type': 'application/json'
         },
@@ -223,13 +307,26 @@ export default function AdminPage() {
       const response = await fetch(`/api/courses/${editingCourse.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${authToken}`,
+      const response = await fetch(`/api/courses/${editingCourse.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(editingCourse)
       })
-
-      console.log('📡 Response status:', response.status)
-      const result = await response.json()
       console.log('📊 Update response:', result)
 
       if (result.success) {
@@ -252,7 +349,16 @@ export default function AdminPage() {
       // Also delete from database
       try {
         const response = await fetch(`/api/courses/${courseId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
         })
 
         const result = await response.json()
@@ -283,7 +389,10 @@ export default function AdminPage() {
 
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify(updateData)
       })
 
@@ -408,33 +517,16 @@ export default function AdminPage() {
     setNewCourse({ ...newCourse, topics })
   }
 
-  if (!isAuthenticated) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-resorcera-cream via-white to-resorcera-light-brown flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full mx-4">
-          <h1 className="text-3xl font-bold text-resorcera-brown text-center mb-6">Admin Login</h1>
-          <form onSubmit={handleLogin}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
-                placeholder="Enter admin password"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-resorcera-ochre to-resorcera-mustard text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
-            >
-              Login
-            </button>
-          </form>
-        </div>
+        <div className="text-resorcera-brown text-xl">🔄 Loading...</div>
       </div>
     )
+  }
+
+  if (!isAuthenticated) {
+    return <SecureAdminLogin onAuthenticated={handleAuthentication} />
   }
 
   return (
@@ -444,9 +536,17 @@ export default function AdminPage() {
       <div className="py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <h1 className="text-3xl font-bold text-resorcera-brown font-display mb-8">
-              Resorcera Admin Dashboard
-            </h1>
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="text-3xl font-bold text-resorcera-brown font-display">
+                🛡️ Secure Admin Dashboard
+              </h1>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                🔐 Logout
+              </button>
+            </div>
 
             {/* Tab Navigation */}
             <div className="border-b border-gray-200 mb-8">
@@ -580,7 +680,10 @@ export default function AdminPage() {
                               if (updatedCourse) {
                                 fetch(`/api/courses/${course.id}`, {
                                   method: 'PUT',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  headers: { 
+                                    'Authorization': `Bearer ${authToken}`,
+                                    'Content-Type': 'application/json' 
+                                  },
                                   body: JSON.stringify(updatedCourse)
                                 }).then(() => refreshCourses())
                               }
