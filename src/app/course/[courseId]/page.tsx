@@ -61,29 +61,40 @@ export default function CoursePage() {
     const fetchCourse = async () => {
       try {
         setLoading(true)
+
+        console.log('🔍 Course ID from params:', courseId)
+        console.log('🌐 Fetching course from API:', `/api/courses/${courseId}`)
         
         // Fetch course details
         const response = await fetch(`/api/courses/${courseId}`)
+        console.log('📡 API Response status:', response.status)
+
         const data = await response.json()
+        console.log('📊 API Response data:', data)
         
         if (data.success) {
+          console.log('✅ Course found:', data.course.title)
           setCourse(data.course)
           
           // Track course view for popularity
           fetch(`/api/courses/${courseId}/view`, { method: 'POST' })
             .catch(err => console.error('Error tracking view:', err))
         } else {
-          console.error('Course not found:', data.error)
+          console.error('❌ Course not found. Error:', data.error)
+          console.log('🔍 Attempted courseId:', courseId)
         }
       } catch (error) {
-        console.error('Error fetching course:', error)
+        console.error('💥 Error fetching course:', error)
       } finally {
         setLoading(false)
       }
     }
 
     if (courseId) {
+      console.log('🚀 Starting course fetch for:', courseId)
       fetchCourse()
+    } else {
+      console.log('❌ No courseId provided')
     }
   }, [courseId])
 

@@ -1,24 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 
-// Course data (simplified)
-const courseData = {
-  'sql-workbook': {
-    title: 'Complete SQL Workbook',
-    price: '₹999',
-    originalPrice: '₹1999',
-    thumbnail: '📊'
-  }
+interface Course {
+  id: string
+  title: string
+  subtitle: string
+  description: string
+  price: string
+  originalPrice?: string
+  duration: string
+  level: string
+  thumbnail: string
+  features: string[]
+  topics: string[]
+  popularity: number
+  featured: boolean
+  comingSoon?: boolean
+  averageRating: number
+  totalRatings: number
+  enrollmentCount: number
+  createdAt: string
+  updatedAt: string
 }
 
 export default function PaymentPage() {
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
+
   const params = useParams()
   const courseId = params.courseId as string
-  const course = courseData[courseId as keyof typeof courseData]
 
   const [paymentMethod, setPaymentMethod] = useState('')
   const [formData, setFormData] = useState({
@@ -28,32 +42,61 @@ export default function PaymentPage() {
   })
   const [showSuccess, setShowSuccess] = useState(false)
 
-  if (!course) {
+  // Fetch course data
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        setLoading(true)
+        console.log('💳 Payment - Fetching course:', courseId)
+
+        const response = await fetch(`/api/courses/${courseId}`)
+        const data = await response.json()
+
+        if (data.success) {
+          console.log('✅ Payment - Course found:', data.course.title)
+          setCourse(data.course)
+        } else {
+          console.error('❌ Payment - Course not found:', data.error)
+        }
+      } catch (error) {
+        console.error('💥 Payment - Error fetching course:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (courseId) {
+      fetchCourse()
+    }
+  }, [courseId])
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-resorcera-cream flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-resorcera-cream via-white to-resorcera-light-brown flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-resorcera-brown mb-4">Course Not Found</h1>
-          <Link href="/" className="text-resorcera-ochre hover:underline">
-            Return to Home
-          </Link>
+          <div className="text-6xl mb-4">💳</div>
+          <div className="text-xl text-resorcera-brown">Loading payment details...</div>
         </div>
       </div>
     )
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Simulate payment processing
-    setTimeout(() => {
-      setShowSuccess(true)
-    }, 1000)
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-resorcera-cream via-white to-resorcera-light-brown flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">❌</div>
+          <h1 className="text-2xl font-bold text-resorcera-brown mb-4">Course Not Found</h1>
+          <p className="text-resorcera-ochre mb-6">The course you're trying to purchase doesn't exist.</p>
+          <Link 
+            href="/courses"
+            className="bg-gradient-to-r from-resorcera-ochre to-resorcera-mustard text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+          >
+            Browse All Courses
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (showSuccess) {
@@ -92,6 +135,22 @@ export default function PaymentPage() {
     )
   }
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
+    event.preventDefault()
+    // Simulate payment processing delay
+    setLoading(true)
+    setTimeout(() => {
+      setLoading(false)
+      setShowSuccess(true)
+    }, 1500)
+  }
+  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const { name, value } = event.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-resorcera-cream via-white to-resorcera-light-brown">
       <Navigation />
@@ -249,11 +308,11 @@ export default function PaymentPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Course Price</span>
-                  <span className="line-through text-gray-400">{course.originalPrice}</span>
+                  <span className="line-through text-gray-400">{course.originalPrice || course.price}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount (50%)</span>
-                  <span className="text-green-600">-₹1000</span>
+                  <span className="text-green-600">Limited Time Offer</span>
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between items-center">
@@ -266,9 +325,9 @@ export default function PaymentPage() {
               <div className="bg-resorcera-cream p-4 rounded-lg">
                 <h4 className="font-semibold text-resorcera-brown mb-2">What you get:</h4>
                 <ul className="space-y-1 text-sm text-gray-700">
-                  <li>✓ Complete SQL Workbook (PDF)</li>
-                  <li>✓ Practice Exercises & Solutions</li>
-                  <li>✓ Real-world Project Files</li>
+                  {course.features.slice(0, 5).map((feature, index) => (
+                    <li key={index}>✓ {feature}</li>
+                  ))}
                   <li>✓ Lifetime Access</li>
                   <li>✓ Email Support</li>
                 </ul>
