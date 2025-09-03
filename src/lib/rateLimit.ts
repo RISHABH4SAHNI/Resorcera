@@ -22,11 +22,13 @@ export function rateLimit(options: RateLimitOptions = { requests: 60, window: 15
     const key = `rate_limit:${ip}`
 
     // Clean up old entries periodically
-    for (const [k, v] of requestCounts.entries()) {
-      if (now > v.resetTime) {
-        requestCounts.delete(k)
+    const keysToDelete: string[] = []
+    requestCounts.forEach((value, key) => {
+      if (now > value.resetTime) {
+        keysToDelete.push(key)
       }
-    }
+    })
+    keysToDelete.forEach(key => requestCounts.delete(key))
 
     const current = requestCounts.get(key)
 

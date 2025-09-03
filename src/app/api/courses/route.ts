@@ -45,34 +45,18 @@ export async function GET(request: NextRequest) {
 // POST /api/courses - Create new course
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    await rateLimit({ requests: 10, window: 15 })(request)
-
     const body = await request.json()
 
-    // Validate input
-    validateCourseInput(body)
-
-    // Sanitize string inputs
-    const sanitizedData = {
-      title: sanitizeString(body.title, 200),
-      subtitle: body.subtitle ? sanitizeString(body.subtitle, 200) : undefined,
-      description: sanitizeString(body.description, 5000),
-      detailedDescription: body.detailedDescription ? sanitizeString(body.detailedDescription, 10000) : undefined,
-      price: body.price ? sanitizeString(body.price, 50) : undefined,
-      originalPrice: body.originalPrice ? sanitizeString(body.originalPrice, 50) : undefined,
-      duration: body.duration ? sanitizeString(body.duration, 100) : undefined,
-      level: body.level || 'Beginner',
-      thumbnail: body.thumbnail ? sanitizeString(body.thumbnail, 10) : '📚',
-      pdfFile: body.pdfFile,
-      features: Array.isArray(body.features) ? body.features.map((f: string) => sanitizeString(f, 200)) : [],
-      topics: Array.isArray(body.topics) ? body.topics.map((t: string) => sanitizeString(t, 200)) : [],
-      featured: Boolean(body.featured),
-      comingSoon: Boolean(body.comingSoon)
+    // Validate required fields
+    if (!body.title || !body.description) {
+      return NextResponse.json(
+        { success: false, error: 'Title and description are required' },
+        { status: 400 }
+      )
     }
 
     // Generate a proper course ID from title
-    const courseId = sanitizedData.title.toLowerCase()
+    const courseId = body.title.toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .trim()
@@ -80,7 +64,20 @@ export async function POST(request: NextRequest) {
     const course = await prisma.course.create({
       data: {
         id: courseId,
-        ...sanitizedData,
+        title: body.title,
+        subtitle: body.subtitle || '',
+        description: body.description,
+        detailedDescription: body.detailedDescription || body.description,
+        price: body.price || 'TBD',
+        originalPrice: body.originalPrice || '',
+        duration: body.duration || 'TBD',
+        level: body.level || 'Beginner',
+        thumbnail: body.thumbnail || '📚',
+        pdfFile: body.pdfFile || null,
+        features: body.features || [],
+        topics: body.topics || [],
+        featured: Boolean(body.featured),
+        comingSoon: Boolean(body.comingSoon),
         averageRating: 0, // Start with 0 rating
         totalRatings: 0,
         popularity: 0,
