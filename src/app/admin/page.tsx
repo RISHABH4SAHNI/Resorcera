@@ -301,24 +301,43 @@ export default function AdminPage() {
   }
 
   const handleToggleFeatured = (courseId: string) => {
-    const course = courses.find(c => c.id === courseId)
+    const course = courses.find(c => c.id === courseId);
     if (course) {
-      const updatedCourse = { ...course, featured: !course.featured }
+      const updatedCourse = { ...course, featured: !course.featured };
 
       // Update in database
-      fetch(`/api/courses/${courseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedCourse)
-      }).then(() => refreshCourses())
+      const updateDatabase = async () => {
+        try {
+          const response = await fetch(`/api/courses/${courseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedCourse)
+          });
+          const result = await response.json();
+          if (result.success) {
+            await refreshCourses();
+            alert(`Course ${updatedCourse.featured ? 'marked as featured' : 'removed from featured'} successfully!`);
+          } else {
+            throw new Error(result.error || 'Failed to update');
+          }
+        } catch (error) {
+          console.error('Error updating featured status:', error);
+          alert('Failed to update featured status. Please try again.');
+          // Revert local state on error
+          setCourses(courses);
+        }
+      };
 
       // Update local state immediately for better UX
       const updatedCourses = courses.map(c => 
         c.id === courseId ? updatedCourse : c
-      )
-      setCourses(updatedCourses)
+      );
+      setCourses(updatedCourses);
+
+      // Update database
+      updateDatabase();
     }
-  }
+  };
 
   const updateEditingCourseField = (field: string, value: any) => {
     if (editingCourse) {

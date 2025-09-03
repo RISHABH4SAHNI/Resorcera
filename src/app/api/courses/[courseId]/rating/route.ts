@@ -66,8 +66,10 @@ export async function POST(request: NextRequest, { params }: { params: Params })
       where: { courseId: params.courseId }
     })
 
-    const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-
+    const averageRating = ratings.length > 0 
+          ? ratings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / ratings.length 
+          : 0
+          
     await prisma.course.update({
       where: { id: params.courseId },
       data: {
