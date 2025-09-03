@@ -157,7 +157,6 @@ export default function AdminPage() {
     const isUpcoming = newCourse.courseType === 'upcoming'
 
     const courseData = {
-      id: courseId, // Add the id property here
       title: newCourse.title || '',
       subtitle: newCourse.subtitle || (isUpcoming ? 'Coming Soon' : ''),
       description: newCourse.description || '',
@@ -168,37 +167,16 @@ export default function AdminPage() {
       level: newCourse.level || 'Beginner',
       thumbnail: newCourse.thumbnail || '📚',
       pdfFile: isUpcoming ? null : pdfFileName,
-      features: isUpcoming ? ['Coming Soon'] : (newCourse.features?.filter(f => f.trim()) || []),
-      topics: isUpcoming ? ['Coming Soon'] : (newCourse.topics?.filter(t => t.trim()) || []),
+      features: isUpcoming ? ['Coming Soon'] : (newCourse.features?.filter(f => f.trim()) || ['Basic course content']),
+      topics: isUpcoming ? ['Coming Soon'] : (newCourse.topics?.filter(t => t.trim()) || ['Course introduction']),
       featured: false,
-      comingSoon: isUpcoming
+      comingSoon: isUpcoming,
+      popularity: 0,
+      averageRating: 5.0,
+      totalRatings: 0,
+      enrollmentCount: 0
     }
 
-    try {
-      // Save to database via API
-      const response = await fetch('/api/courses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(courseData)
-      })
-
-      const result = await response.json()
-      if (result.success) {
-        alert('Course added successfully!')
-        await refreshCourses() // Refresh the courses list
-
-        // Also save to localStorage as backup
-        const updatedCourses = [...courses, result.course]
-        localStorage.setItem('resorcera-courses', JSON.stringify(updatedCourses))
-      } else {
-        alert('Failed to add course: ' + (result.error || 'Unknown error'))
-      }
-    } catch (error) {
-      console.error('Error adding course:', error)
-      alert('Failed to add course. Please try again.')
-    }
     try {
       // Save to database via API
       const response = await fetch('/api/courses', {
@@ -300,44 +278,34 @@ export default function AdminPage() {
     }
   }
 
-  const handleToggleFeatured = (courseId: string) => {
-    const course = courses.find(c => c.id === courseId);
-    if (course) {
-      const updatedCourse = { ...course, featured: !course.featured };
+  const handleToggleFeatured = async (courseId: string) => {
+    const course = courses.find(c => c.id === courseId)
+    if (!course) return
 
-      // Update in database
-      const updateDatabase = async () => {
-        try {
-          const response = await fetch(`/api/courses/${courseId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedCourse)
-          });
-          const result = await response.json();
-          if (result.success) {
-            await refreshCourses();
-            alert(`Course ${updatedCourse.featured ? 'marked as featured' : 'removed from featured'} successfully!`);
-          } else {
-            throw new Error(result.error || 'Failed to update');
-          }
-        } catch (error) {
-          console.error('Error updating featured status:', error);
-          alert('Failed to update featured status. Please try again.');
-          // Revert local state on error
-          setCourses(courses);
-        }
-      };
+    try {
+      // Update in database first
+      const response = await fetch(`/api/courses/${courseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...course, featured: !course.featured })
+      })
 
-      // Update local state immediately for better UX
-      const updatedCourses = courses.map(c => 
-        c.id === courseId ? updatedCourse : c
-      );
-      setCourses(updatedCourses);
-
-      // Update database
-      updateDatabase();
+      const result = await response.json()
+      if (result.success) {
+        // Update local state after successful API call
+        const updatedCourses = courses.map(c => 
+          c.id === courseId ? { ...c, featured: !c.featured } : c
+        )
+        setCourses(updatedCourses)
+        alert(`Course ${!course.featured ? 'marked as featured' : 'removed from featured'} successfully!`)
+      } else {
+        throw new Error(result.error || 'Failed to update')
+      }
+    } catch (error) {
+      console.error('Error updating featured status:', error)
+      alert('Failed to update featured status. Please try again.')
     }
-  };
+  }
 
   const updateEditingCourseField = (field: string, value: any) => {
     if (editingCourse) {

@@ -80,18 +80,16 @@ export default function CourseGrid({ sortBy = 'rating' }: CourseGridProps) {
         <div className="text-center mb-4">
           <div className="text-6xl mb-2">{course.thumbnail}</div>
           <div className="flex items-center justify-center space-x-2">
-            {course.averageRating > 0 && (
-              <>
-                <div className="flex text-yellow-400">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className={i < Math.floor(course.averageRating) ? 'text-yellow-400' : 'text-gray-300'}>
-                      ⭐
-                    </span>
-                  ))}
-                </div>
-                <span className="text-sm text-resorcera-ochre">({course.averageRating.toFixed(1)})</span>
-              </>
-            )}
+            <div className="flex text-yellow-400">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className={i < Math.floor(course.averageRating || 5) ? 'text-yellow-400' : 'text-gray-300'}>
+                  ⭐
+                </span>
+              ))}
+            </div>
+            <span className="text-sm text-resorcera-ochre">
+              ({(course.averageRating || 5.0).toFixed(1)})
+            </span>
           </div>
         </div>
 

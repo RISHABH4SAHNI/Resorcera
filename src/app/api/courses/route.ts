@@ -79,7 +79,11 @@ export async function POST(request: NextRequest) {
         features,
         topics,
         featured: featured || false,
-        comingSoon: comingSoon || false
+        comingSoon: comingSoon || false,
+        averageRating: 5.0, // Default 5-star rating for new courses
+        totalRatings: 0,
+        popularity: 0,
+        enrollmentCount: 0
       }
     })
 
