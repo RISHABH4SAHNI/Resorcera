@@ -306,14 +306,11 @@ export default function CoursePage() {
                     {/* CTA Buttons */}
                     <div className="space-y-3 mb-6">
                       {!course.comingSoon ? (
-                        <>
+                        <Link href={`/payment/${courseId}`}>
                           <button className="w-full bg-gradient-to-r from-resorcera-ochre to-resorcera-mustard text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300">
-                            🛒 Enroll Now
+                            🛒 Add to Cart
                           </button>
-                          <button className="w-full border border-resorcera-ochre text-resorcera-brown py-3 rounded-lg font-medium hover:bg-resorcera-ochre hover:text-white transition-all duration-300">
-                            📋 Add to Wishlist
-                          </button>
-                        </>
+                        </Link>
                       ) : (
                         <button 
                           disabled
