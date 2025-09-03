@@ -58,14 +58,21 @@ export default function AdminPage() {
   // Load courses from API on component mount
   useEffect(() => {
     const fetchCourses = async () => {
+      console.log('🔄 Fetching courses from API...')
       try {
+        console.log('Fetching courses from API...')
         const response = await fetch('/api/courses')
+        console.log('📡 API Response status:', response.status)
         const data = await response.json()
+        console.log('📊 API Response data:', data)
         if (data.success) {
+          console.log('✅ Setting courses:', data.courses.length, 'courses found')
           setCourses(data.courses)
+        } else {
+          console.error('❌ API returned success: false', data.error)
         }
       } catch (error) {
-        console.error('Error fetching courses:', error)
+        console.error('💥 Error fetching courses:', error)
         // Fallback to localStorage if API fails
         const savedCourses = localStorage.getItem('resorcera-courses')
         if (savedCourses) {
@@ -82,10 +89,17 @@ export default function AdminPage() {
   // Refresh courses from API
   const refreshCourses = async () => {
     try {
+      console.log('🔄 Refreshing courses...')
       const response = await fetch('/api/courses')
+      console.log('📡 Refresh Response status:', response.status)
       const data = await response.json()
+      console.log('📊 Refresh API Response:', data)
       if (data.success) {
+        console.log('✅ Updated courses:', data.courses.length, 'courses')
         setCourses(data.courses)
+      } else {
+        console.error('❌ Refresh API returned success: false', data.error)
+        alert('Failed to refresh courses: ' + (data.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error refreshing courses:', error)
@@ -200,7 +214,12 @@ export default function AdminPage() {
     e.preventDefault()
     if (!editingCourse) return
 
+    console.log('🔄 Updating course:', editingCourse.id)
+    console.log('📦 Course data:', editingCourse)
+
     try {
+      console.log('📡 Sending PUT request to update course...')
+
       const response = await fetch(`/api/courses/${editingCourse.id}`, {
         method: 'PUT',
         headers: {
@@ -209,10 +228,16 @@ export default function AdminPage() {
         body: JSON.stringify(editingCourse)
       })
 
+      console.log('📡 Response status:', response.status)
       const result = await response.json()
+      console.log('📊 Update response:', result)
+
       if (result.success) {
+        console.log('✅ Successfully updated course')
         await refreshCourses()
         alert('Course updated successfully!')
+        setShowEditModal(false)
+        setEditingCourse(null)
       } else {
         alert('Failed to update course: ' + (result.error || 'Unknown error'))
       }
@@ -220,9 +245,6 @@ export default function AdminPage() {
       console.error('Error updating course:', error)
       alert('Failed to update course. Please try again.')
     }
-
-    setShowEditModal(false)
-    setEditingCourse(null)
   }
 
   const handleDeleteCourse = async (courseId: string) => {
@@ -251,28 +273,39 @@ export default function AdminPage() {
     const course = courses.find(c => c.id === courseId)
     if (!course) return
 
+    console.log('🔄 Toggling featured for course:', courseId, 'Current featured:', course.featured)
+
     try {
       // Update in database first
+      console.log('📡 Sending PUT request to update featured status...')
+      const updateData = { ...course, featured: !course.featured }
+      console.log('📦 Update data:', updateData)
+
       const response = await fetch(`/api/courses/${courseId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...course, featured: !course.featured })
+        body: JSON.stringify(updateData)
       })
 
+      console.log('📡 Response status:', response.status)
       const result = await response.json()
+      console.log('📊 PUT response:', result)
+
       if (result.success) {
         // Update local state after successful API call
+        console.log('✅ Successfully updated featured status')
         const updatedCourses = courses.map(c => 
           c.id === courseId ? { ...c, featured: !c.featured } : c
         )
         setCourses(updatedCourses)
         alert(`Course ${!course.featured ? 'marked as featured' : 'removed from featured'} successfully!`)
       } else {
-        throw new Error(result.error || 'Failed to update')
+        console.error('API Error:', result.error)
+        alert('Failed to update featured status: ' + (result.error || 'Unknown error'))
       }
     } catch (error) {
-      console.error('Error updating featured status:', error)
-      alert('Failed to update featured status. Please try again.')
+      console.error('💥 Error updating featured status:', error)
+      alert('Failed to update featured status. Please try again. Error: ' + error.message)
     }
   }
 
