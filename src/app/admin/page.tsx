@@ -31,6 +31,57 @@ interface NewCourse extends Partial<Course> {
   courseType?: 'active' | 'upcoming'
 }
 
+// Price input component that automatically adds rupee symbol
+const PriceInput = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  required = false, 
+  label 
+}: { 
+  value: string, 
+  onChange: (value: string) => void, 
+  placeholder?: string, 
+  required?: boolean,
+  label: string 
+}) => {
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let inputValue = e.target.value
+
+    // Remove any existing rupee symbols and non-numeric characters except numbers
+    let numericValue = inputValue.replace(/[^\d]/g, '')
+
+    // If there's a numeric value, format it with rupee symbol
+    if (numericValue) {
+      const formattedValue = `₹${numericValue}`
+      onChange(formattedValue)
+    } else {
+      onChange('')
+    }
+  }
+
+  // Display value without rupee symbol for editing
+  const displayValue = value.startsWith('₹') ? value.slice(1) : value
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <div className="relative">
+        <span className="absolute left-3 top-3 text-gray-500 font-medium">₹</span>
+        <input
+          type="text"
+          required={required}
+          value={displayValue}
+          onChange={handlePriceChange}
+          className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
+          placeholder={placeholder || "Enter amount"}
+        />
+      </div>
+      <p className="text-xs text-gray-500 mt-1">Just enter numbers, ₹ symbol will be added automatically</p>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -655,27 +706,19 @@ export default function AdminPage() {
                   {/* Only show price fields for active courses */}
                   {newCourse.courseType === 'active' && (
                     <div className="grid md:grid-cols-4 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Course Price *</label>
-                        <input
-                          type="text"
-                          required
-                          value={newCourse.price || ''}
-                          onChange={(e) => setNewCourse({...newCourse, price: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
-                          placeholder="₹999"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Original Price</label>
-                        <input
-                          type="text"
-                          value={newCourse.originalPrice || ''}
-                          onChange={(e) => setNewCourse({...newCourse, originalPrice: e.target.value})}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
-                          placeholder="₹1999"
-                        />
-                      </div>
+                      <PriceInput
+                        label="Course Price *"
+                        value={newCourse.price || ''}
+                        onChange={(value) => setNewCourse({...newCourse, price: value})}
+                        placeholder="999"
+                        required
+                      />
+                      <PriceInput
+                        label="Original Price"
+                        value={newCourse.originalPrice || ''}
+                        onChange={(value) => setNewCourse({...newCourse, originalPrice: value})}
+                        placeholder="1999"
+                      />
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
                         <input
@@ -846,25 +889,19 @@ export default function AdminPage() {
                 </div>
 
                 <div className="grid md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Course Price *</label>
-                    <input
-                      type="text"
-                      required
-                      value={editingCourse.price || ''}
-                      onChange={(e) => updateEditingCourseField('price', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Original Price</label>
-                    <input
-                      type="text"
-                      value={editingCourse.originalPrice || ''}
-                      onChange={(e) => updateEditingCourseField('originalPrice', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
-                    />
-                  </div>
+                  <PriceInput
+                    label="Course Price *"
+                    value={editingCourse.price || ''}
+                    onChange={(value) => updateEditingCourseField('price', value)}
+                    placeholder="999"
+                    required
+                  />
+                  <PriceInput
+                    label="Original Price"
+                    value={editingCourse.originalPrice || ''}
+                    onChange={(value) => updateEditingCourseField('originalPrice', value)}
+                    placeholder="1999"
+                  />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Duration</label>
                     <input
