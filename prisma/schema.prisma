@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id               String   @id @default(cuid())
+  title            String
+  subtitle         String?
+  description      String
+  detailedDescription String?
+  price            String
+  originalPrice    String?
+  duration         String
+  level            String
+  thumbnail        String
+  pdfFile          String?
+  features         String[]
+  topics           String[]
+  popularity       Int      @default(0)
+  featured         Boolean  @default(false)
+  comingSoon       Boolean  @default(false)
+  averageRating    Float    @default(0)
+  totalRatings     Int      @default(0)
+  enrollmentCount  Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  enrollments      Enrollment[]
+  ratings          Rating[]
+
+  @@map("courses")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String?  // Optional for guest users
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  enrollments Enrollment[]
+  ratings     Rating[]
+
+  @@map("users")
+}
+
+model Enrollment {
+  id           String   @id @default(cuid())
+  userId       String
+  courseId     String
+  enrolledAt   DateTime @default(now())
+  completedAt  DateTime?
+  progress     Float    @default(0) // 0-100 percentage
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  rating    Float    // 1-5 stars
+  review    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("ratings")
+}

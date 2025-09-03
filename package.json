@@ -1,0 +1,57 @@
+{
+  "name": "resorcera",
+  "version": "1.0.0",
+  "description": "Resorcera - Course Selling Platform",
+  "main": "next.config.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs postgres",
+    "dev:setup": "npm run docker:up && sleep 5 && npm run db:push && npm run db:seed-demo",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:migrate": "npx tsx src/scripts/migrate-courses.ts",
+    "db:seed-demo": "npx tsx src/scripts/seed-demo-courses.ts"
+  },
+  "keywords": [
+    "courses",
+    "education",
+    "e-learning",
+    "resorcera"
+  ],
+  "author": "Resorcera Team",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "@types/multer": "^2.0.0",
+    "@types/nodemailer": "^7.0.1",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "next": "^14.0.0",
+    "nodemailer": "^7.0.6",
+    "prisma": "^6.15.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.4.32",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.3.0"
+  }
+}
