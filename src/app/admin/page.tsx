@@ -86,6 +86,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [courses, setCourses] = useState<Course[]>([])
+  const [isAuthenticating, setIsAuthenticating] = useState(false)
 
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: '',
@@ -157,12 +158,36 @@ export default function AdminPage() {
     }
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (password === 'resorcera2025') {
-      setIsAuthenticated(true)
-    } else {
-      alert('Incorrect password')
+    setIsAuthenticating(true)
+
+    try {
+      console.log('🔐 Attempting admin authentication...')
+      const response = await fetch('/api/auth/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      })
+
+      const result = await response.json()
+      console.log('📡 Auth response:', result)
+
+      if (result.success && result.authenticated) {
+        console.log('✅ Authentication successful')
+        setIsAuthenticated(true)
+        setPassword('')
+      } else {
+        console.log('❌ Authentication failed')
+        alert('Incorrect password')
+      }
+    } catch (error) {
+      console.error('💥 Authentication error:', error)
+      alert('Authentication failed. Please try again.')
+    } finally {
+      setIsAuthenticating(false)
     }
   }
 
@@ -474,13 +499,19 @@ export default function AdminPage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-resorcera-ochre focus:border-transparent"
                 placeholder="Enter admin password"
                 required
+                disabled={isAuthenticating}
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-resorcera-ochre to-resorcera-mustard text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300"
+              disabled={isAuthenticating}
+              className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${
+                isAuthenticating 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-resorcera-ochre to-resorcera-mustard text-white hover:shadow-lg'
+              }`}
             >
-              Login
+              {isAuthenticating ? 'Authenticating...' : 'Login'}
             </button>
           </form>
         </div>
